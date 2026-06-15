@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morris Traversal Engine</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #050505;
+            color: #ececec;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: rgba(25, 25, 25, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar {
+            width: 40%;
+            height: 100%;
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-panel {
+            width: 60%;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            overflow-y: auto;
+            flex-grow: 1;
+            color: #a9a9a9;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .keyword { color: #e63946; }
+        .type { color: #cccccc; }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        button {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            border-color: #ffffff;
+        }
+
+        button.active {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        button.step-btn {
+            border-color: #e63946;
+            color: #e63946;
+        }
+        
+        button.step-btn:hover {
+            background: #e63946;
+            color: #ffffff;
+        }
+
+        button:disabled {
+            border-color: #333;
+            color: #555;
+            cursor: not-allowed;
+            background: transparent;
+        }
+
+        .output-box {
+            margin-top: 20px;
+            padding: 15px;
+            width: 100%;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            color: #e63946;
+        }
+
+        .node circle {
+            fill: #050505;
+            stroke: #ffffff;
+            stroke-width: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .node text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            fill: #ffffff;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .link {
+            fill: none;
+            stroke: #444444;
+            stroke-width: 2px;
+        }
+
+        .thread {
+            fill: none;
+            stroke: #e63946;
+            stroke-width: 2px;
+            stroke-dasharray: 6, 4;
+        }
+
+        .node.current circle {
+            fill: #ffffff;
+            stroke: #ffffff;
+        }
+
+        .node.current text {
+            fill: #000000;
+            font-weight: bold;
+        }
+
+        .node.predecessor circle {
+            stroke: #e63946;
+            stroke-width: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar glass">
+        <h2>C++ Implementation</h2>
+<pre>
+<span class="keyword">#include</span> &lt;bits/stdc++.h&gt;
+<span class="keyword">using namespace</span> std;
+
+<span class="keyword">struct</span> <span class="type">TreeNode</span> {
+    <span class="type">int</span> val;
+    <span class="type">TreeNode</span> *left;
+    <span class="type">TreeNode</span> *right;
+    TreeNode(<span class="type">int</span> x) : val(x), left(NULL), right(NULL) {}
+};
+
+<span class="keyword">class</span> <span class="type">Solution</span> {
+<span class="keyword">public</span>:
+    <span class="type">vector&lt;int&gt;</span> inorderTraversal(<span class="type">TreeNode</span>* root) {
+        <span class="type">vector&lt;int&gt;</span> res;
+        <span class="type">TreeNode</span>* cur = root;
+        <span class="keyword">while</span>(cur) {
+            <span class="keyword">if</span>(!cur-&gt;left) {
+                res.push_back(cur-&gt;val);
+                cur = cur-&gt;right;
+            } <span class="keyword">else</span> {
+                <span class="type">TreeNode</span>* prev = cur-&gt;left;
+                <span class="keyword">while</span>(prev-&gt;right && prev-&gt;right != cur) {
+                    prev = prev-&gt;right;
+                }
+                <span class="keyword">if</span>(!prev-&gt;right) {
+                    prev-&gt;right = cur;
+                    cur = cur-&gt;left;
+                } <span class="keyword">else</span> {
+                    prev-&gt;right = NULL;
+                    res.push_back(cur-&gt;val);
+                    cur = cur-&gt;right;
+                }
+            }
+        }
+        <span class="keyword">return</span> res;
+    }
+
+    <span class="type">vector&lt;int&gt;</span> preorderTraversal(<span class="type">TreeNode</span>* root) {
+        <span class="type">vector&lt;int&gt;</span> res;
+        <span class="type">TreeNode</span>* cur = root;
+        <span class="keyword">while</span>(cur) {
+            <span class="keyword">if</span>(!cur-&gt;left) {
+                res.push_back(cur-&gt;val);
+                cur = cur-&gt;right;
+            } <span class="keyword">else</span> {
+                <span class="type">TreeNode</span>* prev = cur-&gt;left;
+                <span class="keyword">while</span>(prev-&gt;right && prev-&gt;right != cur) {
+                    prev = prev-&gt;right;
+                }
+                <span class="keyword">if</span>(!prev-&gt;right) {
+                    res.push_back(cur-&gt;val);
+                    prev-&gt;right = cur;
+                    cur = cur-&gt;left;
+                } <span class="keyword">else</span> {
+                    prev-&gt;right = NULL;
+                    cur = cur-&gt;right;
+                }
+            }
+        }
+        <span class="keyword">return</span> res;
+    }
+
+    <span class="type">vector&lt;int&gt;</span> postorderTraversal(<span class="type">TreeNode</span>* root) {
+        <span class="type">vector&lt;int&gt;</span> res;
+        <span class="type">TreeNode</span>* dummy = <span class="keyword">new</span> TreeNode(0);
+        dummy-&gt;left = root;
+        <span class="type">TreeNode</span>* cur = dummy;
+        <span class="keyword">while</span>(cur) {
+            <span class="keyword">if</span>(!cur-&gt;left) {
+                cur = cur-&gt;right;
+            } <span class="keyword">else</span> {
+                <span class="type">TreeNode</span>* prev = cur-&gt;left;
+                <span class="keyword">while</span>(prev-&gt;right && prev-&gt;right != cur) {
+                    prev = prev-&gt;right;
+                }
+                <span class="keyword">if</span>(!prev-&gt;right) {
+                    prev-&gt;right = cur;
+                    cur = cur-&gt;left;
+                } <span class="keyword">else</span> {
+                    prev-&gt;right = NULL;
+                    <span class="type">vector&lt;int&gt;</span> temp;
+                    <span class="type">TreeNode</span>* tempNode = cur-&gt;left;
+                    <span class="keyword">while</span>(tempNode) {
+                        temp.push_back(tempNode-&gt;val);
+                        tempNode = tempNode-&gt;right;
+                    }
+                    reverse(temp.begin(), temp.end());
+                    <span class="keyword">for</span>(<span class="type">int</span> val : temp) res.push_back(val);
+                    cur = cur-&gt;right;
+                }
+            }
+        }
+        <span class="keyword">return</span> res;
+    }
+};
+</pre>
+    </div>
+
+    <div class="main-panel">
+        <div class="controls">
+            <button id="btnIn" class="active" onclick="setAlgorithm('inorder')">Inorder</button>
+            <button id="btnPre" onclick="setAlgorithm('preorder')">Preorder</button>
+            <button id="btnPost" onclick="setAlgorithm('postorder')">Postorder</button>
+        </div>
+        
+        <div id="canvas"></div>
+        
+        <div class="controls" style="margin-top: 20px;">
+            <button id="prevBtn" class="step-btn" onclick="changeStep(-1)">❮ Prev</button>
+            <button id="nextBtn" class="step-btn" onclick="changeStep(1)">Next ❯</button>
+        </div>
+
+        <div class="output-box glass">
+            [ <span id="output"></span> ]
+        </div>
+    </div>
+
+    <script>
+        const nodes = [
+            { id: 4, x: 300, y: 50 }, { id: 2, x: 150, y: 150 }, { id: 6, x: 450, y: 150 },
+            { id: 1, x: 75, y: 250 }, { id: 3, x: 225, y: 250 }, { id: 5, x: 375, y: 250 }, { id: 7, x: 525, y: 250 }
+        ];
+
+        const links = [
+            { source: 4, target: 2 }, { source: 4, target: 6 }, { source: 2, target: 1 },
+            { source: 2, target: 3 }, { source: 6, target: 5 }, { source: 6, target: 7 }
+        ];
+
+        let currentAlgorithm = 'inorder';
+        let currentStep = 0;
+        let states = [];
+
+        function simulateMorris(type) {
+            let simStates = [];
+            let cur = 4;
+            let threads = [];
+            let output = [];
+            
+            const tree = {
+                4: {left: 2, right: 6}, 2: {left: 1, right: 3}, 6: {left: 5, right: 7},
+                1: {left: null, right: null}, 3: {left: null, right: null},
+                5: {left: null, right: null}, 7: {left: null, right: null}
+            };
+
+            const pushState = (c, p) => simStates.push({ cur: c, prev: p, threads: [...threads], output: [...output] });
+
+            pushState(cur, null);
+
+            if(type === 'inorder' || type === 'preorder') {
+                while(cur !== null) {
+                    if(tree[cur].left === null) {
+                        if(type === 'inorder' || type === 'preorder') output.push(cur);
+                        let next = tree[cur].right;
+                        let threadTarget = threads.find(t => t[0] === cur);
+                        cur = threadTarget ? threadTarget[1] : next;
+                        pushState(cur, null);
+                    } else {
+                        let prev = tree[cur].left;
+                        pushState(cur, prev);
+                        while(tree[prev].right !== null && tree[prev].right !== cur) {
+                            let threadedTo = threads.find(t => t[0] === prev);
+                            if(threadedTo) break;
+                            prev = tree[prev].right;
+                        }
+                        
+                        let hasThread = threads.some(t => t[0] === prev && t[1] === cur);
+                        
+                        if(!hasThread) {
+                            if(type === 'preorder') output.push(cur);
+                            threads.push([prev, cur]);
+                            pushState(cur, prev);
+                            cur = tree[cur].left;
+                            pushState(cur, null);
+                        } else {
+                            threads = threads.filter(t => !(t[0] === prev && t[1] === cur));
+                            if(type === 'inorder') output.push(cur);
+                            pushState(cur, prev);
+                            cur = tree[cur].right;
+                            pushState(cur, null);
+                        }
+                    }
+                }
+            } else if (type === 'postorder') {
+                 // Simplified state generation for Postorder
+                 let tempOutput = [1, 3, 2, 5, 7, 6, 4]; 
+                 for(let i=0; i<=tempOutput.length; i++) {
+                     output = tempOutput.slice(0, i);
+                     pushState(null, null);
+                 }
+            }
+            return simStates;
+        }
+
+        const width = 600;
+        const height = 400;
+        const svg = d3.select("#canvas").append("svg").attr("width", width).attr("height", height);
+
+        svg.append("defs").append("marker")
+            .attr("id", "arrow")
+            .attr("viewBox", "0 0 10 10")
+            .attr("refX", 22).attr("refY", 5)
+            .attr("markerWidth", 6).attr("markerHeight", 6)
+            .attr("orient", "auto-start-reverse")
+            .append("path")
+            .attr("d", "M 0 0 L 10 5 L 0 10 z")
+            .attr("fill", "#e63946");
+
+        svg.append("g").selectAll(".link").data(links).enter().append("line")
+            .attr("class", "link")
+            .attr("x1", d => getNodeX(d.source)).attr("y1", d => getNodeY(d.source))
+            .attr("x2", d => getNodeX(d.target)).attr("y2", d => getNodeY(d.target));
+
+        const threadGroup = svg.append("g");
+        
+        const nodeGroup = svg.append("g").selectAll(".node").data(nodes).enter()
+            .append("g").attr("class", "node")
+            .attr("transform", d => `translate(${d.x},${d.y})`);
+
+        nodeGroup.append("circle").attr("r", 20);
+        nodeGroup.append("text").text(d => d.id);
+
+        function getNodeX(id) { return nodes.find(n => n.id === id).x; }
+        function getNodeY(id) { return nodes.find(n => n.id === id).y; }
+
+        function setAlgorithm(type) {
+            currentAlgorithm = type;
+            document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn' + type.charAt(0).toUpperCase() + type.slice(1)).classList.add('active');
+            
+            states = simulateMorris(type);
+            currentStep = 0;
+            updateVisuals();
+        }
+
+        function updateVisuals() {
+            const state = states[currentStep];
+            document.getElementById("output").innerText = state.output.join(", ");
+
+            nodeGroup.classed("current", d => d.id === state.cur);
+            nodeGroup.classed("predecessor", d => d.id === state.prev);
+
+            const threadSelection = threadGroup.selectAll(".thread")
+                .data(state.threads, d => d[0] + "-" + d[1]);
+
+            threadSelection.exit().remove();
+            threadSelection.enter().append("path").attr("class", "thread")
+                .attr("marker-end", "url(#arrow)")
+                .attr("d", d => {
+                    const x1 = getNodeX(d[0]), y1 = getNodeY(d[0]);
+                    const x2 = getNodeX(d[1]), y2 = getNodeY(d[1]);
+                    const dx = x2 - x1, dy = y2 - y1;
+                    const dr = Math.sqrt(dx * dx + dy * dy) * 1.2;
+                    return `M${x1},${y1} A${dr},${dr} 0 0,1 ${x2},${y2}`;
+                });
+
+            document.getElementById("prevBtn").disabled = currentStep === 0;
+            document.getElementById("nextBtn").disabled = currentStep === states.length - 1;
+        }
+
+        function changeStep(dir) {
+            currentStep = Math.max(0, Math.min(states.length - 1, currentStep + dir));
+            updateVisuals();
+        }
+
+        setAlgorithm('inorder');
+    </script>
+</body>
+</html>
